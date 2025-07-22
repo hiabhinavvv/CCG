@@ -111,4 +111,4 @@ You are an expert coding challenge creator.
 
 ## 📜 License
 
-MIT License - do whatever the fuck you want with this code. Just don't blame me if it breaks.
+MIT License - do whatever you want with this code. Just don't blame me if it breaks.
