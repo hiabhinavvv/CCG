@@ -10,6 +10,8 @@ export function ChallengeGenerator() {
     const [difficulty, setDifficulty] = useState("easy")
     const [quota, setQuota] = useState(null)
     const {makeRequest} = useApi()
+    const [topic, setTopic] = useState("topic1")
+
 
     useEffect(() => {
         fetchQuota()
@@ -31,7 +33,7 @@ export function ChallengeGenerator() {
         try {
             const data = await makeRequest("generate-challenge", {
                 method: 'POST',
-                body: JSON.stringify({difficulty})
+                body: JSON.stringify({difficulty, topic})
                 }
             )
             setChallenge(data)
@@ -51,26 +53,44 @@ export function ChallengeGenerator() {
     }
     
     return <div className="challenge-container">
-        <h2>coding challenge generator</h2>
+        <h2>QUIZ</h2>
 
         <div className="quota-display">
-            <p>challenge remaining today: {quota?.quota_remaining || 0}</p>
+            <p>Quota Remaining Today: {quota?.quota_remaining || 0}</p>
             {quota?.quota_remaining === 0 && (
-                <p>next reset: {getNextResetTime()?.toLocaleString()}</p>
+                <p>Next Reset: {getNextResetTime()?.toLocaleString()}</p>
             )}
         </div>
 
         <div className="difficulty-selector">
+            <label htmlFor="topic">
+                Select Topic:
+            </label>
+            <select id="topic"
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                disabled={isloading}>
+                <option value="topic1">Machine Learning Fundamentals</option>
+                <option value="topic2">Neural Networks and Deep Learning</option>
+                <option value="topic3">Computer Vision</option>
+                <option value="topic4">Natural Language Processing</option>
+                <option value="topic5">Reinforcement Learning</option>
+                <option value="topic6">Data Structures and Algorithms</option>
+                <option value="topic7">AI Ethics</option>
+            </select>
+        </div>
+
+        <div className="difficulty-selector">
             <label htmlFor="difficulty">
-                select difficulty:
+                Select Difficulty:
             </label>
             <select id="difficulty"
             value={difficulty}
             onChange={(e) => setDifficulty(e.target.value)}
             disabled = {isloading}>
-                <option value="easy">easy</option>
-                <option value="medium">medium</option>
-                <option value="hard">hard</option>
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
             </select>
         </div>
 
@@ -78,7 +98,7 @@ export function ChallengeGenerator() {
             onClick={generateChallenge}
             disabled={false}
         >
-            {isloading ? "generating...." : "generate challenge"}
+            {isloading ? "Generating...." : "Get Question"}
         </button>
 
         {error && <div className="error-message">

@@ -19,6 +19,7 @@ router = APIRouter()
 
 class ChallengeRequest(BaseModel):
     difficulty: str
+    topic: str
 
     class Config:
         json_schema_extra = {"example": {"difficulty": "easy"}}
@@ -38,7 +39,10 @@ async def generate_challenge(request: ChallengeRequest, request_obj: Request, db
         if quota.quota_remaining <= 0:
             raise HTTPException(status_code=429, detail="quota exhausted")
         
-        challenge_data = generate_challenge_with_ai(request.difficulty)
+        challenge_data = generate_challenge_with_ai(
+            difficulty=request.difficulty,
+            topic=request.topic
+        )
 
         new_challenge = create_challenge(
             db=db,

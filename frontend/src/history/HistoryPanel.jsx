@@ -28,7 +28,7 @@ export function HistoryPanel() {
     }
 
     if (isLoading) {
-        return <div className="loading">loading history...</div>
+        return <div className="loading">Loading History...</div>
     }
 
     if (error) {
@@ -39,8 +39,8 @@ export function HistoryPanel() {
     }
 
     return <div className="history-panel">
-        <h2>history</h2>
-        {history.length === 0 ? <p>no challenge history</p> :
+        <h2>History</h2>
+        {history.length === 0 ? <p>No Challenge History</p> :
             <div className="history-list">
                 {history.map((challenge) => {
                     return <MCQChallenge
