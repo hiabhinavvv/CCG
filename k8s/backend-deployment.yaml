@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ccg-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ccg-backend
+  template:
+    metadata:
+      labels:
+        app: ccg-backend
+    spec:
+      initContainers:
+      - name: wait-for-mysql
+        image: busybox:1.28
+        command: ['sh', '-c', 'until nc -z ccg-mysql 3306; do echo waiting for mysql; sleep 2; done;']
+      containers:
+      - name: backend
+        image: ccg-backend:latest
+        imagePullPolicy: Never
+        envFrom:
+        - secretRef:
+            name: ccg-backend-secret
+        ports:
+        - containerPort: 8000

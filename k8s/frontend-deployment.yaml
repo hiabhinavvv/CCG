@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ccg-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ccg-frontend
+  template:
+    metadata:
+      labels:
+        app: ccg-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: ccg-frontend:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 80

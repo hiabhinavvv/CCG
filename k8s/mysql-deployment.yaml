@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ccg-mysql-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ccg-mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ccg-mysql
+  template:
+    metadata:
+      labels:
+        app: ccg-mysql
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:8
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: "root"
+        - name: MYSQL_DATABASE
+          value: "ccg_db"
+        - name: MYSQL_USER
+          value: "ccg_user"
+        - name: MYSQL_PASSWORD
+          value: "ccg_pass"
+        ports:
+        - containerPort: 3306
+        volumeMounts:
+        - name: mysql-storage
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: mysql-storage
+        persistentVolumeClaim:
+          claimName: ccg-mysql-pvc

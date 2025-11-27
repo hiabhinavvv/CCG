@@ -1,0 +1,113 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install backend dependencies
+      working-directory: ./backend
+      run: |
+        pip install -r requirements.txt
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+    
+    - name: Install frontend dependencies
+      working-directory: ./frontend
+      run: npm ci
+    
+    - name: Build frontend
+      working-directory: ./frontend
+      env:
+        VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
+        VITE_API_URL: ${{ secrets.VITE_API_URL }}
+      run: npm run build
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Build Backend Docker Image
+      run: |
+        docker build -t ccg-backend:${{ github.sha }} ./backend
+    
+    - name: Build Frontend Docker Image
+      run: |
+        docker build -t ccg-frontend:${{ github.sha }} \
+          --build-arg VITE_CLERK_PUBLISHABLE_KEY=${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }} \
+          --build-arg VITE_API_URL=${{ secrets.VITE_API_URL }} \
+          ./frontend
+    
+    - name: Start Minikube
+      uses: medyagh/setup-minikube@latest
+      with:
+        kubernetes-version: v1.28.0
+    
+    - name: Load images to Minikube
+      run: |
+        minikube image load ccg-backend:${{ github.sha }}
+        minikube image load ccg-frontend:${{ github.sha }}
+    
+    - name: Create Kubernetes secrets
+      run: |
+        kubectl create secret generic ccg-backend-secret \
+          --from-literal=CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }} \
+          --from-literal=GROQ_API_KEY=${{ secrets.GROQ_API_KEY }} \
+          --from-literal=DB_USER=ccg_user \
+          --from-literal=DB_PASSWORD=ccg_pass \
+          --from-literal=DB_HOST=ccg-mysql \
+          --from-literal=DB_NAME=ccg_db \
+          --from-literal=DATABASE_URL="mysql+pymysql://ccg_user:ccg_pass@ccg-mysql:3306/ccg_db"
+    
+    - name: Deploy MySQL
+      run: |
+        kubectl apply -f k8s/mysql-deployment.yaml
+        kubectl apply -f k8s/mysql-service.yaml
+    
+    - name: Wait for MySQL to be ready
+      run: |
+        kubectl wait --for=condition=ready pod -l app=ccg-mysql --timeout=300s
+    
+    - name: Deploy Backend
+      run: |
+        kubectl apply -f k8s/backend-deployment.yaml
+        kubectl apply -f k8s/backend-service.yaml
+        kubectl set image deployment/ccg-backend backend=ccg-backend:${{ github.sha }}
+    
+    - name: Deploy Frontend
+      run: |
+        kubectl apply -f k8s/frontend-deployment.yaml
+        kubectl apply -f k8s/frontend-service.yaml
+        kubectl set image deployment/ccg-frontend frontend=ccg-frontend:${{ github.sha }}
+    
+    - name: Wait for deployments
+      run: |
+        kubectl wait --for=condition=ready pod -l app=ccg-backend --timeout=300s
+        kubectl wait --for=condition=ready pod -l app=ccg-frontend --timeout=300s
+    
+    - name: Check deployment status
+      run: |
+        kubectl get pods
+        kubectl get services
+    
+    - name: Run basic health checks
+      run: |
+        kubectl port-forward service/ccg-backend 8000:8000 &
+        sleep 5
+        curl http://localhost:8000/docs || echo "Backend health check failed"
