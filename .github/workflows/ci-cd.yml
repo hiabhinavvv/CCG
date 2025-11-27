@@ -27,8 +27,17 @@ jobs:
     
     - name: Run Backend Tests
       working-directory: ./backend
+      env:
+        DATABASE_URL: "sqlite:///./test.db"
+        CLERK_SECRET_KEY: "test_key"
+        GROQ_API_KEY: "test_key"
+        DB_USER: "test"
+        DB_PASSWORD: "test"
+        DB_HOST: "test"
+        DB_NAME: "test"
       run: |
         pytest -v --cov=src
+
     
     - name: Set up Node.js
       uses: actions/setup-node@v4
