@@ -5,3 +5,5 @@ python-dotenv
 clerk-backend-api
 openai
 svix
+pymysql
+mysql-connector-python

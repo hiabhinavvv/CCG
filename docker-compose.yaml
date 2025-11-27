@@ -1,0 +1,59 @@
+version: "3.8"
+
+
+services:
+  ccg_mysql:
+    image: mysql:8
+    container_name: ccg_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ccg_db
+      MYSQL_USER: ccg_user
+      MYSQL_PASSWORD: ccg_pass
+    ports:
+      - "33070:3306"
+    volumes:
+      - ccg_mysql_data:/var/lib/mysql
+    networks:
+      - ccg_net
+
+
+  ccg_backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ccg_backend
+    depends_on:
+      - ccg_mysql
+    env_file:
+      - ./backend/.env
+    ports:
+      - "8000:8000"
+    networks:
+      - ccg_net
+
+
+  ccg_frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_CLERK_PUBLISHABLE_KEY: pk_test_bmF0aW9uYWwtb3NwcmV5LTk4LmNsZXJrLmFjY291bnRzLmRldiQ
+        VITE_API_URL: http://localhost:8000
+    container_name: ccg_frontend
+    depends_on:
+      - ccg_backend
+    ports:
+      - "5173:80"
+    networks:
+      - ccg_net
+
+
+volumes:
+  ccg_mysql_data:
+
+
+networks:
+  ccg_net:
+    driver: bridge
