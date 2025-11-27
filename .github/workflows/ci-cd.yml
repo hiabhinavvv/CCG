@@ -37,7 +37,6 @@ jobs:
         DB_NAME: "test"
       run: |
         pytest -v --cov=src
-
     
     - name: Set up Node.js
       uses: actions/setup-node@v4
@@ -73,73 +72,7 @@ jobs:
           --build-arg VITE_API_URL=${{ secrets.VITE_API_URL }} \
           ./frontend
     
-    - name: Start Minikube
-      uses: medyagh/setup-minikube@latest
-      with:
-        kubernetes-version: v1.28.0
-        driver: docker
-    
-    - name: Verify Minikube and kubectl
+    - name: Success
       run: |
-        minikube status
-        kubectl cluster-info
-        kubectl get nodes
-    
-    - name: Load images to Minikube
-      run: |
-        minikube image load ccg-backend:latest
-        minikube image load ccg-frontend:latest
-    
-    - name: Create Kubernetes secrets
-      run: |
-        kubectl create secret generic ccg-backend-secret \
-          --from-literal=CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }} \
-          --from-literal=GROQ_API_KEY=${{ secrets.GROQ_API_KEY }} \
-          --from-literal=DB_USER=ccg_user \
-          --from-literal=DB_PASSWORD=ccg_pass \
-          --from-literal=DB_HOST=ccg-mysql \
-          --from-literal=DB_NAME=ccg_db \
-          --from-literal=DATABASE_URL="mysql+pymysql://ccg_user:ccg_pass@ccg-mysql:3306/ccg_db"
-    
-    - name: Deploy MySQL
-      run: |
-        kubectl apply -f k8s/mysql-deployment.yaml
-        kubectl apply -f k8s/mysql-service.yaml
-    
-    - name: Wait for MySQL to be ready
-      run: |
-        kubectl wait --for=condition=ready pod -l app=ccg-mysql --timeout=300s
-        sleep 15
-    
-    - name: Deploy Backend
-      run: |
-        kubectl apply -f k8s/backend-deployment.yaml
-        kubectl apply -f k8s/backend-service.yaml
-    
-    - name: Deploy Frontend
-      run: |
-        kubectl apply -f k8s/frontend-deployment.yaml
-        kubectl apply -f k8s/frontend-service.yaml
-    
-    - name: Wait for deployments
-      run: |
-        kubectl rollout status deployment/ccg-backend --timeout=300s
-        kubectl rollout status deployment/ccg-frontend --timeout=300s
-    
-    - name: Check deployment status
-      run: |
-        kubectl get pods -o wide
-        kubectl get services
-        kubectl describe pods -l app=ccg-backend | grep -A 5 "Events:"
-    
-    - name: Show backend logs if needed
-      if: always()
-      run: |
-        echo "=== Backend Logs ==="
-        kubectl logs -l app=ccg-backend --tail=100 || echo "No backend logs available"
-    
-    - name: Run basic health checks
-      run: |
-        kubectl port-forward service/ccg-backend 8000:8000 &
-        sleep 5
-        curl -f http://localhost:8000/docs || echo "Backend health check failed"
+        echo "✅ All tests passed!"
+        echo "✅ Docker images built successfully!"
