@@ -23,6 +23,12 @@ jobs:
       working-directory: ./backend
       run: |
         pip install -r requirements.txt
+        pip install pytest pytest-cov httpx
+    
+    - name: Run Backend Tests
+      working-directory: ./backend
+      run: |
+        pytest -v --cov=src
     
     - name: Set up Node.js
       uses: actions/setup-node@v4
@@ -32,6 +38,10 @@ jobs:
     - name: Install frontend dependencies
       working-directory: ./frontend
       run: npm ci
+    
+    - name: Run Frontend Tests
+      working-directory: ./frontend
+      run: npm test
     
     - name: Build frontend
       working-directory: ./frontend
@@ -83,6 +93,7 @@ jobs:
     - name: Wait for MySQL to be ready
       run: |
         kubectl wait --for=condition=ready pod -l app=ccg-mysql --timeout=300s
+        sleep 10
     
     - name: Deploy Backend
       run: |
@@ -98,16 +109,21 @@ jobs:
     
     - name: Wait for deployments
       run: |
-        kubectl wait --for=condition=ready pod -l app=ccg-backend --timeout=300s
-        kubectl wait --for=condition=ready pod -l app=ccg-frontend --timeout=300s
+        kubectl rollout status deployment/ccg-backend --timeout=300s
+        kubectl rollout status deployment/ccg-frontend --timeout=300s
     
     - name: Check deployment status
       run: |
         kubectl get pods
         kubectl get services
     
+    - name: Show backend logs if failed
+      if: failure()
+      run: |
+        kubectl logs -l app=ccg-backend --tail=50
+    
     - name: Run basic health checks
       run: |
         kubectl port-forward service/ccg-backend 8000:8000 &
         sleep 5
-        curl http://localhost:8000/docs || echo "Backend health check failed"
+        curl -f http://localhost:8000/docs || echo "Backend health check failed"

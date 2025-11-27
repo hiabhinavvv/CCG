@@ -4,6 +4,11 @@ from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 import os
 from dotenv import load_dotenv
+from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, func
+from sqlalchemy.orm import declarative_base
+from .database import engine  # ✅ Import from database.py
+
+Base = declarative_base()
 
 load_dotenv()
 
@@ -43,7 +48,6 @@ class ChallengeQuota(Base):
     last_reset_date = Column(DateTime, default=datetime.now)
 
 
-Base.metadata.create_all(engine)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
